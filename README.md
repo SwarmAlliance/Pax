@@ -1,2 +1,3 @@
-This directory contains some contracts using features that are not yet supported by Solidity.
-# 300
+The Pax Protocol is a civic network and legal system powered by Ethereum.
+
+Under heavy development. Contracts in the protocol are not yet safe to use.
