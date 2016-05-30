@@ -1,6 +1,5 @@
 contract Utilities {
     
-    
     function toChar(uint input) internal returns (uint output) {
         if(input > 9) 
             return input + 87;
@@ -41,6 +40,29 @@ contract Utilities {
         }
         return _output;
     }
+    
+    function bytes32ArrayToString (bytes32[] input) returns (string output) {
+        bytes memory _words = new bytes(input.length * 32);
+        uint length;
+        
+        for (uint c = 0; c < input.length; c++) {
+            for (uint d = 0; d < 32; d++) {
+                byte _letter = byte(bytes32(uint(input[c]) * 2 ** (8 * d)));
+                if (_letter != 0) {
+                    _words[length] = _letter;
+                    length += 1;
+                }
+            }
+        }
+        bytes memory _output = new bytes(length);
+        
+        for (uint e = 0; e < length; e++) {
+            _output[e] = _words[e];
+        }
+        
+        return string(_output);
+    }
+    
     
     function paxIdToString(bytes32 input) internal returns (string output) {
         return string(bytes32ToBytes(input));
