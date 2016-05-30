@@ -1,3 +1,6 @@
+/// @title Utilities 0.1.
+/// @author Physes
+
 contract Utilities {
     
     function toChar(uint input) internal returns (uint output) {
@@ -7,6 +10,8 @@ contract Utilities {
             return input + 48;
     }
     
+    //translate an input of type address to type bytes
+
     function addressToBytes(address input) internal returns(bytes output) {
         uint160 addresses = uint160(input);
         
@@ -24,6 +29,8 @@ contract Utilities {
         return _output;
     }
     
+    //translate an input of type bytes to type bytes32
+
     function bytes32ToBytes(bytes32 input) internal returns(bytes output) {
         uint letters = uint(input);
         string memory holder = new string(64);
@@ -41,13 +48,28 @@ contract Utilities {
         return _output;
     }
     
+    //translate an input of type bytes32 to type string
+
+    function bytes32ToString (bytes32 input) returns (string output) {
+        bytes memory _letters = new bytes(32);
+        for (uint c = 0; c < 32; c++) {
+            byte char = byte(bytes32(uint(input) * 2 ** (8 * c)));
+            if (char != 0) {
+                _letters[c] = char;
+            }
+        }
+        return string(_letters);
+    }
+
+    //translate an input of type bytes32 Array to a string
+
     function bytes32ArrayToString (bytes32[] input) returns (string output) {
         bytes memory _words = new bytes(input.length * 32);
         uint length;
         
-        for (uint c = 0; c < input.length; c++) {
-            for (uint d = 0; d < 32; d++) {
-                byte _letter = byte(bytes32(uint(input[c]) * 2 ** (8 * d)));
+        for (uint d = 0; d < input.length; d++) {
+            for (uint e = 0; e < 32; e++) {
+                byte _letter = byte(bytes32(uint(input[d]) * 2 ** (8 * e)));
                 if (_letter != 0) {
                     _words[length] = _letter;
                     length += 1;
@@ -56,13 +78,13 @@ contract Utilities {
         }
         bytes memory _output = new bytes(length);
         
-        for (uint e = 0; e < length; e++) {
-            _output[e] = _words[e];
+        for (uint f = 0; f < length; f++) {
+            _output[f] = _words[f];
         }
-        
         return string(_output);
     }
     
+    //translate a PaxID to a printable string
     
     function paxIdToString(bytes32 input) internal returns (string output) {
         return string(bytes32ToBytes(input));
