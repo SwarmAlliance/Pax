@@ -1,5 +1,9 @@
+import "Utilities.sol";
+import "Diaspora.sol";
+
 /// @title Persona 0.1: The universal Pax identity file
 /// @author Physes
+
 
 contract Persona {
     
