@@ -1,168 +1,245 @@
 /// @title Persona 0.1: The universal Pax identity file
 /// @author Physes
 
-import "Utilities.sol"
-import "Diaspora.sol"
+import "Utilities.sol";
 
-
-contract Persona {
+contract generalPersona {
     
-    ///@param state variables related to identity
-		bytes[] public name;
-		bytes32 public id;
-		bytes32 public origin;
-		bytes32[] public residency;
-		address public persona;
-        address[] diaspora;
-		uint public birth;
-		uint public access;
-		int public exit;
-		int public status;
-		Gender public gender;
+    address owner;
+    address[] trustees;
+    
+    struct Persona {
+		bytes32[] name;
+		bytes32[][] residency;
+		bytes32 id;
+		string origin;
+		uint id_interval;
+		uint access;
+		int birth;
+		int exit;
+		int publicity;
+		int status;
+		Sex assigned;
+    }
 
-		
-	struct Gender {
-	    bool male;
-	    bool female;
-	    bool uncategorized;
-	}
-		
+	enum Sex{ Male, Female, Uncategorized }
+
+    event broadcastUpdate(bytes32 _id, string _broadcast, uint time);
 	event broadcastNewClient(bytes32 _id, uint time);
 	event broadcastNameChange(bytes32[] name, uint time);
 	event broadcastQuery(address query, uint time);
+	event broadcastIdChange(bytes32 _oldId, bytes32 _newId, string _broadcast, uint time);
+	event broadcastExit(bytes32 _id, int _status, string _broadcast, uint time);
+	
+
+	
+	modifier onlyOwner {
+	    if(msg.sender != owner) throw;
+	    _
+	}
 	
 	modifier inGroup {
-	    if(msg.sender != persona) throw;
-	    for(uint d = 0; d < diaspora.length; d ++) {
-	        if(msg.sender != diaspora[d]) throw;
+	    if(msg.sender != owner) throw;
+	    for(uint d = 0; d < trustees.length; d ++) {
+	        if(msg.sender != trustees[d]) throw;
 	    }
 	    _
 	}
 
 	modifier outGroup {
-	    if(msg.sender != persona) broadcastQuery(msg.sender, now);
-	    for(uint k = 0; k < diaspora.length; k++) { 
-	        if(msg.sender != diaspora[k]) broadcastQuery(msg.sender, now);
+	    if(msg.sender != owner) broadcastQuery(msg.sender, now);
+	    for(uint k = 0; k < trustees.length; k++) { 
+	        if(msg.sender != trustees[k]) broadcastQuery(msg.sender, now);
 	    } 
 	    _
 	}
 	
 	modifier onlyCitizens {
-	    if(msg.sender == persona || status >= 1) {
+	    if(msg.sender == owner || Persona.status >= 10) {
 	        _
 	    }
 	}
 		
-	function Persona(){
-	    persona = msg.sender;
-	    exit = 0; 
-	    status = 1;
-	    id = sha3(birth, name, now);
-	    broadcastNewClient(id, now);
+	function generalPersona(){
+	    owner = msg.sender;
+	    
+	    Persona.exit = 0;
+	    Persona.publicity = 0;
+	    Persona.status = 01;
+	    Persona.id = sha3(Persona.birth, Persona.name, now);
+	    Persona.id_changed = now;
+	    
+	    broadcastNewClient(Persona.id, now);
     }
     
     function setName(bytes32[] _newName) inGroup returns(bool success) {
+        string output = "Name was changed.";
         if(_newName.length > 5) throw;
-        for(uint n = 0; n < _newName.length; n++) {
-            name[n] = _newName[n];
-        }
+        Persona.name = _newName;
+        broadcastUpdate(Persona.id, output, now);
+        return true;
     }
     
     
-		
-	function changeOfName(bytes32[] _newName) inGroup returns(bool success) {
-		if(_newName.length > 5) throw;
-		    for(uint c = 0; c < _newName.length; c++) {
-	            name[c] = _newName[c];
-		    }
-	//broadcast change of name
-        broadcastNameChange(name);
+    function setSex(int input) inGroup returns (bool output) {
+	    string _output;
+	    
+	    if(input > 1 || input < -1) throw;
+	    if(input = 1) {
+	        Persona.assigned = Sex.Male;
+	        _output = "Sex is male";
+	        
+	    } else if(input = -1) {
+	        Persona.assigned = Sex.Female;
+	        output = "Sex is female";
+	    } else if(input = 0) {
+	        Persona.assigned = Sex.Uncategorized;
+	        output = "Sex in uncategorized";
+	    }
+	    broadcastUpdate(Persona.id, _output, now);
+	    return true;
+	}
+	
+	function setOrigin(bytes32 input) inGroup outGroup returns (bool output) {
+	    string _output = "Origin established.";
+        if(Persona.id != "") throw;
+        if(input = "") throw;
+        Persona.origin = input;
+        broadcastUpdate(Persona.id, _output, now);
         return true;
-		}
-		
-	function Identify(address _id) returns(
+	}
+	
+	function setBirth(int input) inGroup outGroup returns (bool output) {
+	   if(input != 0 && input < now - 1 years) {
+	        Persona.birth = input;
+	    }
+	    string _output = "Birth established";
+	    broadcastUpdate(Persona.id, _output, now);
+	    return true;
+	}
+	
+	function changeAddress(bytes32[] input) inGroup outGroup returns (bool output) {
+	    if(input.length > 5) throw;
+	    uint x = Persona.residency.length + 1;
+	        Persona.residency[][x].push = input;
+	        string _output = "Address changed";
+	        broadcastUpdate(Persona.id, _output, now);
+	        return true;
+	}
+	
+	function changeId() onlyOwner returns (bytes32 output) {
+	    if(now - 90 days > Persona.id_changed) {
+	        bytes32 oldId = Persona.id;
+	        Persona.id = sha3(Persona.birth, Persona.name, now);
+	        string _output = "ID changed";
+	        broadcastIdChange(oldId, Persona.id, _output, now);
+	    }   
+	}
+	
+	function addTrustees(address[] input) private onlyOwner returns (bool output) {
+	    uint _trustees = trustees.length;
+	    if(input.length > 5 - _trustees) throw;
+	        trustees.push(input);
+	    string _output = "Trustee added";
+	    broadcastUpdate(Persona.id, _output, now);
+	    return true;
+	}
+	
+	function removeTrustees(address[] input) private onlyOwner returns (bool output) {
+	    if(input.length > 5) throw;
+	    for(uint v = 0; v < input.length; v++) {
+	        for(uint u = 0; u < trustees.length; u++) {
+	            if(input[v] = trustees[u]) {
+	                delete(trustees[u]);
+	            }
+	        }
+	    }
+	    string _output = "Trustee removed";
+	    broadcastUpdate(Persona.id, _output, now);
+	    return true;
+	}
+	
+	function checkStatus(bytes32 input) returns (bytes32 output) {
+	    if(input = Persona.id) {
+	        return Persona.status;
+	    }
+	} 
+	
+	function exit(int input) inGroup returns (bool output) {
+	    if(input < -1 || input > 1) throw;
+	    Persona.status = input;
+	    string _output;
+	    if(input = 1) {
+	        _output = "Honorable Exit";
+	    } else if(input = 0) {
+	        _output = "Returned";
+	    } else {
+	        _output = "Dishonorable Exit";
+	    }
+	    broadcastExit(Persona.id, input, _output, now);
+	    return true;
+	}
+	
+	function Delete(address input) onlyOwner returns(bool output) {
+	    suicide(this);
+	    msg.value.send(input);
+	    return true;
+	}
+	
+	function publicity(){}
+	
+	function batchInput(bytes32[] _name, 
+	                    bytes32[] _residency,
+	                    string _origin,
+	                    int _birth,
+	                    int _setting,
+	                    int _sex) inGroup returns(bool output) {
+	   setName(_name);
+	   changeAddress(_residency);
+	   setOrigin(_origin);
+	   setBirth(_birth);
+	   publicity(_setting);
+	   setSex(_sex);
+	   
+	   return true;
+	  
+	}
+	
+	function batchOutput(bytes32 _id) returns(
 	    uint timestamp,
-		bytes _name,
-		bytes32 _origin,
+		string _name,
+		string _address,
+		string _origin,
 		bytes32 _residency,
-		bytes32 _gender,
-		address _persona,
+		string _sex,
 		uint _birth,
 		uint _access,
 		int _exit,
         int _status) {
-		      
-            bytes32 name_id;
-            uint j = 0;
-            for(uint h = 0; name.length; h++) {
-		        for(uint i = 0; name[h].length; i++) {
-		            name_id[j] == name[h][i];
-		            j++;
-		        }
-		        j++;
-		    }
+            
+        string newName = Utilities.bytes32ArrayToString(Persona.name, true);
+        string newAddress = Utilities.addressToString(owner);
+        string newResidency = Utilities.bytes32ArrayToString(Persona.residency, true);
+        string sex;
+        
+        if(Persona.assigned = Sex.Male) {
+            sex = "Male";
+        } else if(Persona.assigned = Sex.Female) {
+            sex = "Female";
+        } else {
+            sex = "Uncategorized";
+        }
+		    
 		    return now;
-		    return name_id;
-		    return origin;
-		    return residency;
-		    return gender;
-		    return persona;
-		    return diaspora;
-		    return birth;
-		    return access;
-		    return exit;
-		    return status;
-	 
-	        if(gender.male == true) {
-	            gender = "Male";
-	        } else if(gender.female == true) {
-	            gender = "Female";
-	        } return gender;
-	        
-		            
-		        }
-		
+		    return newName;
+		    return newAddress;
+		    return Persona.origin;
+		    return newResidency;
+		    return sex;
+		    return Persona.birth;
+		    return Persona.access;
+		    return Persona.exit;
+		    return Persona.status;
+		    
+        }
 }
-
-//make constructor provision of input data optional
-	     /*               
-	     if(_name.length == 0 || _name.length > 5) throw;
-	     for(uint a = 0; a < _name.length; a++) {
-	         name[a] = _name[a];
-	     }
-	     
-	     if(_origin == "" ) {
-	         _origin = "Unknown";
-	     } else {
-	         _origin == origin;
-	     }
-	     
-	      if(_birth == 0 || _birth > now) {
-	         throw;
-	     } else {
-	        birth = _birth;
-	     }
-	     
-	     if(_male == true && _female == true) {
-	        throw;
-	     } else if (_male == false && _female == false) {
-	         gender.uncategorized == true;
-	     } else if(_male) {
-	         gender.male == true;
-	         gender.female == false;
-	         gender.uncategorized == false;
-	     } else if(_female) {
-	        gender.female == true;
-	        gender.male == false;
-	        gender.uncategorized == false;
-	     }
-	     
-	    if(_residency.length > 5) throw;
-	    if(_residency.length == 0) {
-	        residency[0] = "Unknown";
-	    }
-	 
-	    for(uint b = 0; b < _residency.length; b++) {
-	        _residency[b] = residency[b];
-	                }*/
-       
